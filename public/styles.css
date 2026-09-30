@@ -1,294 +1,154 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TikTok Booster</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <div class="brand-mark">TB</div>
+          <div>
+            <div class="brand-name">TikTok Booster</div>
+            <div class="brand-tag">viral score studio</div>
+          </div>
+        </div>
+        <div class="topbar-badge">HTTPS • trend signal</div>
+      </header>
 
-:root {
-  --primary-color: #6366f1;
-  --secondary-color: #ec4899;
-  --text-dark: #1f2937;
-  --text-light: #6b7280;
-  --bg-light: #f9fafb;
-  --bg-white: #ffffff;
-  --border-color: #e5e7eb;
-  --success-color: #10b981;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-}
+      <main class="layout">
+        <section class="hero-panel">
+          <div class="eyebrow">AI trend intelligence</div>
+          <h1>Upload your video and see if it has viral potential.</h1>
+          <p>
+            Analyze your idea against trending TikTok themes, compare your content with the strongest patterns,
+            and score your performance potential from 1 to 100.
+          </p>
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: var(--text-dark);
-  line-height: 1.6;
-  min-height: 100vh;
-  padding: 20px;
-}
+          <div class="hero-stats">
+            <div>
+              <strong id="stat-score">92</strong>
+              <span>best signal</span>
+            </div>
+            <div>
+              <strong id="stat-theme">23</strong>
+              <span>trend themes</span>
+            </div>
+            <div>
+              <strong id="stat-speed">3.2x</strong>
+              <span>benchmark uplift</span>
+            </div>
+          </div>
+        </section>
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  background: var(--bg-white);
-  border-radius: 12px;
-  box-shadow: var(--shadow-lg);
-  overflow: hidden;
-}
+        <section class="analysis-panel">
+          <form id="analyzeForm" class="analysis-form" enctype="multipart/form-data">
+            <div class="field-row two-up">
+              <label>
+                Video title
+                <input type="text" name="title" id="title" placeholder="e.g. I turned a boring room into a viral setup" required />
+              </label>
+              <label>
+                Theme / niche
+                <input type="text" name="theme" id="theme" placeholder="e.g. fashion, fitness, food, hacks" required />
+              </label>
+            </div>
 
-header {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-  color: white;
-  padding: 60px 20px;
-  text-align: center;
-}
+            <div class="field-row two-up">
+              <label>
+                Hook line
+                <input type="text" name="hook" id="hook" placeholder="e.g. I did this for 3 days and it changed everything" />
+              </label>
+              <label>
+                Creator level
+                <select name="creatorType" id="creatorType">
+                  <option value="new">New creator</option>
+                  <option value="growing">Growing creator</option>
+                  <option value="creator">Established creator</option>
+                  <option value="brand">Brand account</option>
+                </select>
+              </label>
+            </div>
 
-.header-content h1 {
-  font-size: 3em;
-  margin-bottom: 10px;
-  font-weight: 700;
-}
+            <div class="field-row two-up">
+              <label>
+                Video duration (seconds)
+                <input type="number" name="duration" id="duration" min="5" max="120" value="18" />
+              </label>
+              <label>
+                Hashtags
+                <input type="text" name="hashtags" id="hashtags" placeholder="#viral #fyp #lifestyle #trend" />
+              </label>
+            </div>
 
-.subtitle {
-  font-size: 1.2em;
-  opacity: 0.9;
-  margin-bottom: 20px;
-}
+            <label>
+              Caption / description
+              <textarea name="caption" id="caption" rows="4" placeholder="Add the exact caption or short description you plan to use"></textarea>
+            </label>
 
-.security-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 10px 16px;
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
-  font-weight: 500;
-}
+            <label class="upload-box">
+              <span>Upload your video</span>
+              <input type="file" name="video" id="video" accept="video/*" required />
+            </label>
 
-.lock-icon {
-  font-size: 1.2em;
-}
+            <button type="submit" class="primary-button">Analyze viral potential</button>
+          </form>
 
-main {
-  padding: 60px 40px;
-}
+          <div id="loadingState" class="loading-state hidden">
+            <div class="spinner"></div>
+            <p>Scanning trends and comparing your video to viral patterns...</p>
+          </div>
 
-section {
-  margin-bottom: 60px;
-}
+          <div id="results" class="results-panel hidden">
+            <div class="score-topline">
+              <div>
+                <div class="score-label">Viral score</div>
+                <div id="scoreValue" class="score-value">0</div>
+              </div>
+              <div class="score-badge" id="scoreBadge">D</div>
+            </div>
 
-h2, h3 {
-  color: var(--primary-color);
-  margin-bottom: 20px;
-  font-size: 2em;
-}
+            <div class="score-summary" id="scoreSummary"></div>
 
-h3 {
-  font-size: 1.5em;
-}
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span>Trend fit</span>
+                <strong id="metricTrend">0</strong>
+              </div>
+              <div class="metric-card">
+                <span>Title strength</span>
+                <strong id="metricTitle">0</strong>
+              </div>
+              <div class="metric-card">
+                <span>Hook power</span>
+                <strong id="metricHook">0</strong>
+              </div>
+              <div class="metric-card">
+                <span>Retention</span>
+                <strong id="metricRetention">0</strong>
+              </div>
+            </div>
 
-.hero {
-  text-align: center;
-  padding: 40px 0;
-  border-bottom: 1px solid var(--border-color);
-}
+            <div class="comparison-box">
+              <h3>Trending benchmark</h3>
+              <div id="benchmarkDetail"></div>
+            </div>
 
-.hero p {
-  font-size: 1.1em;
-  color: var(--text-light);
-  max-width: 600px;
-  margin: 0 auto;
-}
+            <div class="suggestions-box">
+              <h3>How to improve</h3>
+              <ul id="suggestionsList"></ul>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
 
-.feature-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-top: 30px;
-}
-
-.feature-card {
-  padding: 30px;
-  background: var(--bg-light);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  text-align: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--primary-color);
-}
-
-.feature-icon {
-  font-size: 2.5em;
-  display: block;
-  margin-bottom: 15px;
-}
-
-.feature-card h4 {
-  color: var(--text-dark);
-  margin-bottom: 10px;
-}
-
-.feature-card p {
-  color: var(--text-light);
-  font-size: 0.95em;
-}
-
-.api-demo {
-  background: var(--bg-light);
-  padding: 40px;
-  border-radius: 8px;
-}
-
-.demo-box {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 20px;
-}
-
-.input-field {
-  flex: 1;
-  min-width: 200px;
-  padding: 12px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 1em;
-  transition: all 0.3s ease;
-}
-
-.input-field:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.btn-primary {
-  padding: 12px 32px;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1em;
-}
-
-.btn-primary:hover {
-  transform: scale(1.02);
-  box-shadow: var(--shadow-lg);
-}
-
-.btn-primary:active {
-  transform: scale(0.98);
-}
-
-.response-box {
-  margin-top: 20px;
-  padding: 20px;
-  background: var(--bg-white);
-  border-left: 4px solid var(--primary-color);
-  border-radius: 4px;
-  display: none;
-  min-height: 60px;
-}
-
-.response-box.show {
-  display: block;
-  animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.response-box pre {
-  margin: 0;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9em;
-  color: var(--text-dark);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.status {
-  background: var(--bg-light);
-  padding: 40px;
-  border-radius: 8px;
-}
-
-.status-content {
-  padding: 20px;
-  background: var(--bg-white);
-  border-radius: 6px;
-  border-left: 4px solid var(--success-color);
-}
-
-.status-content.error {
-  border-left-color: #ef4444;
-  background: #fee2e2;
-}
-
-.status-content p {
-  margin: 8px 0;
-  font-family: 'Courier New', monospace;
-  font-size: 0.95em;
-}
-
-footer {
-  background: var(--text-dark);
-  color: white;
-  text-align: center;
-  padding: 30px 20px;
-  border-top: 1px solid var(--border-color);
-}
-
-footer p {
-  margin: 5px 0;
-}
-
-.footer-note {
-  font-size: 0.9em;
-  opacity: 0.8;
-}
-
-@media (max-width: 768px) {
-  .header-content h1 {
-    font-size: 2em;
-  }
-
-  main {
-    padding: 30px 20px;
-  }
-
-  h2, h3 {
-    font-size: 1.5em;
-  }
-
-  .demo-box {
-    flex-direction: column;
-  }
-
-  .input-field {
-    width: 100%;
-  }
-
-  .btn-primary {
-    width: 100%;
-  }
-}
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,99 @@
+const form = document.getElementById('analyzeForm');
+const loadingState = document.getElementById('loadingState');
+const resultsPanel = document.getElementById('results');
+
+const fieldRefs = {
+  scoreValue: document.getElementById('scoreValue'),
+  scoreBadge: document.getElementById('scoreBadge'),
+  scoreSummary: document.getElementById('scoreSummary'),
+  metricTrend: document.getElementById('metricTrend'),
+  metricTitle: document.getElementById('metricTitle'),
+  metricHook: document.getElementById('metricHook'),
+  metricRetention: document.getElementById('metricRetention'),
+  benchmarkDetail: document.getElementById('benchmarkDetail'),
+  suggestionsList: document.getElementById('suggestionsList')
+};
+
+function setBadge(score) {
+  if (score >= 85) return 'A+';
+  if (score >= 75) return 'A';
+  if (score >= 60) return 'B';
+  if (score >= 45) return 'C';
+  return 'D';
+}
+
+function renderResults(data) {
+  fieldRefs.scoreValue.textContent = data.score;
+  fieldRefs.scoreBadge.textContent = data.grade;
+  fieldRefs.scoreBadge.style.background =
+    data.score >= 80 ? 'linear-gradient(135deg, #43d39e, #25d0a6)' :
+    data.score >= 60 ? 'linear-gradient(135deg, #7c6bff, #5fc8ff)' :
+    'linear-gradient(135deg, #ffb84d, #ff5a7d)';
+
+  fieldRefs.scoreSummary.textContent = data.summary;
+  fieldRefs.metricTrend.textContent = `${data.breakdown.trendMatch}/100`;
+  fieldRefs.metricTitle.textContent = `${data.breakdown.titleStrength}/100`;
+  fieldRefs.metricHook.textContent = `${data.breakdown.hookStrength}/100`;
+  fieldRefs.metricRetention.textContent = `${data.breakdown.retentionPotential}/100`;
+
+  const benchmark = data.benchmarkTrend;
+  if (benchmark) {
+    fieldRefs.benchmarkDetail.innerHTML = `
+      <strong>${benchmark.theme}</strong> is the closest trend match.<br>
+      Momentum: <strong>${benchmark.momentum}%</strong><br>
+      Average views: <strong>${benchmark.avgViews.toLocaleString()}</strong><br>
+      Completion rate: <strong>${benchmark.avgCompletion}%</strong><br>
+      Example pattern: <strong>${benchmark.example}</strong>
+    `;
+  } else {
+    fieldRefs.benchmarkDetail.textContent = 'No close trend match detected yet. Your concept is more original and should be tightened around a clearer trend pattern.';
+  }
+
+  fieldRefs.suggestionsList.innerHTML = data.suggestions
+    .map((suggestion) => `<li>${suggestion}</li>`)
+    .join('');
+
+  resultsPanel.classList.remove('hidden');
+}
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const formData = new FormData(form);
+  loadingState.classList.remove('hidden');
+  resultsPanel.classList.add('hidden');
+
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Analysis failed');
+    }
+
+    renderResults(data);
+  } catch (error) {
+    resultsPanel.classList.remove('hidden');
+    fieldRefs.scoreValue.textContent = '—';
+    fieldRefs.scoreBadge.textContent = 'X';
+    fieldRefs.scoreSummary.textContent = error.message;
+    fieldRefs.benchmarkDetail.textContent = 'Please upload a valid video and complete the required fields.';
+    fieldRefs.suggestionsList.innerHTML = '<li>Use a valid MP4, MOV, MKV, or WebM file and try again.</li>';
+  } finally {
+    loadingState.classList.add('hidden');
+  }
+});
+
+const statScore = document.getElementById('stat-score');
+const statTheme = document.getElementById('stat-theme');
+const statSpeed = document.getElementById('stat-speed');
+
+statScore.textContent = '94';
+statTheme.textContent = '24';
+statSpeed.textContent = '3.8x';
+
+fieldRefs.scoreBadge.textContent = 'D';

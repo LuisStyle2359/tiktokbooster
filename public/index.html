@@ -1,84 +1,228 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TikTok Booster - HTTPS Site</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div class="container">
-    <header>
-      <div class="header-content">
-        <h1>🚀 TikTok Booster</h1>
-        <p class="subtitle">Secure HTTPS Application</p>
-        <div class="security-badge">
-          <span class="lock-icon">🔒</span>
-          <span>HTTPS Enabled</span>
-        </div>
-      </div>
-    </header>
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+require('dotenv').config();
 
-    <main>
-      <section class="hero">
-        <h2>Welcome to Your HTTPS Site</h2>
-        <p>This is a fully functional secure web application with end-to-end encryption.</p>
-      </section>
+const app = express();
+const PORT = process.env.PORT || 3443;
+const uploadDir = path.join(__dirname, 'uploads');
 
-      <section class="features">
-        <h3>Features</h3>
-        <div class="feature-grid">
-          <div class="feature-card">
-            <span class="feature-icon">🔐</span>
-            <h4>Secure</h4>
-            <p>HTTPS encryption for all traffic</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-icon">⚡</span>
-            <h4>Fast</h4>
-            <p>Built with Node.js and Express</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-icon">📱</span>
-            <h4>Responsive</h4>
-            <p>Works on all devices</p>
-          </div>
-          <div class="feature-card">
-            <span class="feature-icon">🛠️</span>
-            <h4>Modern</h4>
-            <p>Latest web technologies</p>
-          </div>
-        </div>
-      </section>
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
-      <section class="api-demo">
-        <h3>API Demo</h3>
-        <div class="demo-box">
-          <input 
-            type="text" 
-            id="messageInput" 
-            placeholder="Enter a message..."
-            class="input-field"
-          >
-          <button id="sendBtn" class="btn-primary">Send Data</button>
-          <div id="response" class="response-box"></div>
-        </div>
-      </section>
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const ext = path.extname(file.originalname || '.mp4');
+    cb(null, `${unique}${ext}`);
+  }
+});
 
-      <section class="status">
-        <h3>Server Status</h3>
-        <div id="statusContent" class="status-content">
-          <p>Checking connection...</p>
-        </div>
-      </section>
-    </main>
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowed = ['video/mp4', 'video/quicktime', 'video/x-matroska', 'video/webm'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only video files are allowed'));
+  }
+});
 
-    <footer>
-      <p>&copy; 2024 TikTok Booster. Powered by Express & HTTPS</p>
-      <p class="footer-note">🔒 This site uses secure HTTPS encryption</p>
-    </footer>
-  </div>
+const trendData = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'data', 'trends.json'), 'utf8')
+);
 
-  <script src="script.js"></script>
-</body>
-</html>
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    app: 'tiktokbooster-viral-analyzer'
+  });
+});
+
+function extractKeywords(input = '') {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter(word => word.length > 2);
+}
+
+function normalizeScore(value) {
+  return Math.max(0, Math.min(100, Number(value) || 0));
+}
+
+function findRelevantTrends(themeText, caption = '', hashtags = '') {
+  const input = `${themeText} ${caption} ${hashtags}`.toLowerCase();
+  const terms = extractKeywords(input);
+
+  const matches = trendData.filter((trend) => {
+    const trendTerms = extractKeywords(`${trend.theme} ${trend.keywords} ${trend.examples}`);
+    const overlap = new Set(terms.filter((t) => trendTerms.includes(t)));
+    return overlap.size > 0 || trend.theme.toLowerCase().includes(themeText.toLowerCase());
+  });
+
+  return matches.length ? matches.slice(0, 5) : trendData.slice(0, 3);
+}
+
+function calculateViralScore(payload) {
+  const { title = '', caption = '', theme = '', hashtags = '', duration = 15, hook = '', creatorType = 'new' } = payload;
+  const titleWords = extractKeywords(title);
+  const captionWords = extractKeywords(caption);
+  const hashWords = extractKeywords(hashtags);
+  const trendMatches = findRelevantTrends(theme, caption, hashtags);
+
+  const trendMatchScore = trendMatches.reduce((acc, trend) => acc + trend.momentum, 0) / Math.max(trendMatches.length, 1);
+
+  const titleStrength = Math.min(100, titleWords.length * 4 + (title.includes('how') ? 10 : 0) + (title.includes('why') ? 8 : 0));
+  const hookStrength = Math.min(100, hook.length ? 25 + Math.min(50, hook.length / 2) : 30);
+  const hookPatternBoost = /\b(why|how|before|after|wait|stop|vs|secret|mistake|truth|best|hack|challenge|POV)\b/i.test(hook) ? 12 : 0;
+  const hashtagBoost = Math.min(40, hashWords.length * 4);
+  const retentionBoost = duration >= 12 && duration <= 27 ? 18 : duration < 8 ? 8 : 12;
+  const creatorBoost = creatorType === 'creator' ? 8 : creatorType === 'brand' ? 5 : 10;
+  const trendFit = Math.min(100, trendMatchScore * 0.9);
+
+  const score = normalizeScore(
+    (titleStrength * 0.2) +
+    (hookStrength * 0.22) +
+    (hookPatternBoost * 1.2) +
+    (hashtagBoost * 0.9) +
+    (retentionBoost * 1.3) +
+    (creatorBoost * 1.2) +
+    (trendFit * 0.8) +
+    (Math.min(100, captionWords.length * 2.5) * 0.1)
+  );
+
+  return {
+    score: normalizeScore(score),
+    titleStrength,
+    hookStrength,
+    trendFit,
+    hashtagBoost,
+    retentionBoost,
+    creatorBoost,
+    trendMatches
+  };
+}
+
+function buildSuggestions(result, payload) {
+  const suggestions = [];
+  const theme = payload.theme || 'general lifestyle';
+
+  if (result.titleStrength < 60) {
+    suggestions.push(`Rewrite the title to make it curiosity-driven. Example: “${theme} trick no one tells you about” or “How I fixed ${theme} in 10 seconds.”`);
+  }
+
+  if (result.hookStrength < 70) {
+    suggestions.push('Open with a sharper hook in the first 1–2 seconds: a strong before/after, a surprising result, or a direct promise.');
+  }
+
+  if (result.hashtagBoost < 25) {
+    suggestions.push('Add 3–5 highly related hashtags and 1 trend tag tied to the content theme to improve discoverability.');
+  }
+
+  if (result.retentionBoost < 18) {
+    suggestions.push('Keep the video around 12–22 seconds and punch the payoff within the first 3 seconds to keep completion rate high.');
+  }
+
+  if (result.trendFit < 70) {
+    suggestions.push(`Adapt the content to trending ${theme} patterns: faster cuts, stronger payoff, text overlays, and a clearer transformation moment.`);
+  }
+
+  suggestions.push('Use a strong on-screen text hook, a visual payoff, and a clear CTA like “watch till the end” or “save this for later.”');
+
+  return suggestions.slice(0, 5);
+}
+
+app.post('/api/analyze', upload.single('video'), (req, res) => {
+  try {
+    const payload = {
+      title: req.body.title || '',
+      caption: req.body.caption || '',
+      theme: req.body.theme || '',
+      hashtags: req.body.hashtags || '',
+      duration: Number(req.body.duration) || 15,
+      hook: req.body.hook || '',
+      creatorType: req.body.creatorType || 'new',
+      filename: req.file ? req.file.originalname : 'no-upload'
+    };
+
+    const result = calculateViralScore(payload);
+    const suggestions = buildSuggestions(result, payload);
+    const score = result.score;
+    const benchmarkLabel = score >= 80 ? 'High viral potential' : score >= 60 ? 'Promising growth' : score >= 40 ? 'Needs better hook' : 'Low momentum';
+
+    const topTrend = result.trendMatches[0] || null;
+
+    const response = {
+      score,
+      grade: score >= 85 ? 'A+' : score >= 75 ? 'A' : score >= 60 ? 'B' : score >= 45 ? 'C' : 'D',
+      benchmark: benchmarkLabel,
+      summary: `This concept sits around ${score}/100 for viral potential. ${topTrend ? `The best match is ${topTrend.theme} content with ${topTrend.momentum}% trend momentum.` : 'This is a more original concept and should be sharpened to current trends.'}`,
+      velocity: score >= 85 ? 'Very likely to trend' : score >= 60 ? 'Likely to gain traction' : 'Will need stronger optimization',
+      breakdown: {
+        trendMatch: Math.round(result.trendFit),
+        titleStrength: Math.round(result.titleStrength),
+        hookStrength: Math.round(result.hookStrength),
+        hashtagStrength: Math.round(result.hashtagBoost),
+        retentionPotential: Math.round(result.retentionBoost),
+        creatorPotential: Math.round(result.creatorBoost)
+      },
+      benchmarkTrend: topTrend ? {
+        theme: topTrend.theme,
+        momentum: topTrend.momentum,
+        avgViews: topTrend.avgViews,
+        avgCompletion: topTrend.avgCompletion,
+        example: topTrend.examples
+      } : null,
+      suggestions,
+      payload
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('ANALYZE_ERROR', error);
+    res.status(500).json({ error: 'Failed to analyze video.' });
+  }
+});
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err.message === 'Only video files are allowed') {
+    return res.status(400).json({ error: 'Please upload a valid video file (.mp4, .mov, .webm, .mkv).' });
+  }
+  console.error(err.stack);
+  return res.status(500).json({ error: 'Internal server error' });
+});
+
+const certPath = path.join(__dirname, 'certs');
+const keyPath = path.join(certPath, 'key.pem');
+const certFilePath = path.join(certPath, 'cert.pem');
+
+if (fs.existsSync(keyPath) && fs.existsSync(certFilePath)) {
+  const options = {
+    key: fs.readFileSync(keyPath),
+    cert: fs.readFileSync(certFilePath)
+  };
+
+  https.createServer(options, app).listen(PORT, () => {
+    console.log(`🔒 TikTok Booster HTTPS server running at https://localhost:${PORT}`);
+  });
+} else {
+  console.error('⚠️  SSL certificates not found!');
+  console.log('Run: npm run generate-cert');
+  process.exit(1);
+}
